@@ -5,65 +5,98 @@
 - **Asignatura:** Taller 1: Prompts Engineering
 - **Tema:** Crear una aplicación de Lista de Tareas en Python desde la terminal utilizando prompt engineering.
 - **Nombre del estudiante:** Jhossua Vega
+- **Fecha de entrega:** jueves, 2 de julio de 2026
 
 ## Proveedor y modelo de IA utilizado
 
 - **Proveedor:** Cascade (asistente de código integrado en el IDE)
-- **Modelo de IA:** Modelo de lenguaje OpenAI GPT-4o
+- **Modelo de IA:** OpenAI GPT-4o
 
 ## Prompts utilizados
 
-Se utilizaron tres prompts estructurados siguiendo la guía de "El buen prompt": **Rol**, **Contexto**, **Tarea**, **Restricciones** y **Formato**. Los prompts completos están documentados en el archivo `prompts.md` del repositorio.
+Se diseñaron cuatro prompts estructurados siguiendo la guía de **El buen prompt**, ampliada con secciones de **QA** y **UX** para garantizar un entregable robusto, ordenado y profesional. Los prompts completos están en `prompts.md`.
 
-1. **Prompt 1:** Estructura base de la lista de tareas con persistencia JSON (`add`, `list`, `done`, `delete`).
-2. **Prompt 2:** Extensión del programa con `edit`, `search`, prioridades, fechas límite y filtros.
-3. **Prompt 3:** Mejora de la experiencia con colores opcionales, `stats` y exportación a CSV.
+1. **Prompt 1 - Arquitectura, dominio, persistencia y pruebas:** diseño de la clase `TaskManager`, persistencia JSON, validaciones y suite de pruebas unitarias.
+2. **Prompt 2 - Interfaz de línea de comandos (CLI):** integración de `argparse` con subcomandos, manejo de errores y códigos de salida.
+3. **Prompt 3 - Funcionalidades avanzadas, filtros y control de calidad:** prioridades, fechas límite, filtros (`hoy`, `vencidas`), ordenamiento, búsqueda y detección de tareas vencidas.
+4. **Prompt 4 - UX profesional, colores, exportación CSV y documentación:** colores opcionales, formato alineado, exportación CSV, README, requirements, `.gitignore`, informe y capturas.
 
 ## Resultado final
 
-La aplicación final es un script de Python ejecutable desde la terminal llamado `todo.py`. Sus funciones principales son:
+La aplicación entregada es una **Lista de Tareas profesional** que se ejecuta completamente desde la terminal. El código está organizado en una capa de dominio (`TaskManager`) separada de la capa de presentación (CLI), lo que facilita el mantenimiento, las pruebas y futuras extensiones.
 
-- `add`: agregar tareas con título, descripción, prioridad y fecha límite.
-- `list`: listar tareas con filtros por estado y prioridad, y ordenar por fecha o prioridad.
-- `done`: marcar tareas como completadas.
-- `delete`: eliminar tareas.
-- `edit`: editar tareas existentes.
-- `search`: buscar tareas por palabra clave.
-- `stats`: ver estadísticas de progreso.
-- `export`: exportar las tareas a un archivo CSV.
+### Funciones principales
 
-La persistencia se realiza en un archivo JSON ubicado en el directorio personal del usuario (`%USERPROFILE%\.todo_cli\tasks.json`), por lo que los datos se mantienen entre ejecuciones.
+| Comando | Descripción |
+|---------|-------------|
+| `add` | Agregar tarea con título, descripción, prioridad y fecha límite |
+| `list` | Listar tareas con filtros (`todas`, `pendientes`, `completadas`, `hoy`, `vencidas`) y ordenamiento |
+| `done` | Marcar tarea como completada |
+| `delete` | Eliminar tarea por ID |
+| `edit` | Editar título, descripción, prioridad o fecha límite |
+| `search` | Buscar tareas por palabra clave (case-insensitive) |
+| `stats` | Estadísticas: total, completadas, pendientes, vencidas y progreso |
+| `export` | Exportar tareas a CSV codificado en UTF-8 |
+
+### Persistencia
+
+Las tareas se almacenan en un archivo JSON en el directorio personal del usuario:
+
+```text
+%USERPROFILE%\.todo_cli\tasks.json
+```
+
+## Calidad y pruebas (QA)
+
+- Se implementó una **suite de 23 pruebas unitarias** en `tests/test_todo.py` usando `unittest` y archivos temporales.
+- Las pruebas cubren: validaciones, CRUD, búsqueda, filtros, ordenamiento, detección de vencidas, exportación CSV y persistencia.
+- Los errores se manejan con mensajes claros dirigidos a `stderr` y códigos de salida distintos de cero.
+- El archivo JSON corrupto se recupera devolviendo una lista vacía, evitando que la aplicación se detenga.
+
+Comando para ejecutar las pruebas:
+
+```powershell
+python -m unittest discover tests
+```
+
+## Experiencia de usuario (UX)
+
+- Colores semánticos opcionales con `colorama`: alta (rojo), media (amarillo), baja (verde).
+- Fechas límite vencidas se resaltan en rojo para tareas pendientes.
+- Tabla alineada sin emojis, compatible con CMD, PowerShell y Windows Terminal.
+- Mensajes de error indican la causa y el formato esperado.
+- La ayuda del programa (`python todo.py --help`) está en español y es clara.
 
 ## Repositorio en GitHub
 
-- **Enlace:** [https://github.com/JhossuaVega/taller1_prompts_engineering](https://github.com/JhossuaVega/taller1_prompts_engineering)
-
-> Nota: reemplaza el enlace anterior por el enlace real del repositorio una vez que hayas subido el proyecto a GitHub.
+- **URL:** [https://github.com/avegac1996/Taller1_prompts_engineering.git](https://github.com/avegac1996/Taller1_prompts_engineering.git)
 
 ## Estado del repositorio local
 
-El repositorio Git ya está inicializado en:
+El repositorio Git está inicializado en:
 
 ```text
 C:\Users\JhossuaVega\Downloads\taller_ia
 ```
 
-El historial de commits incluye los archivos principales del proyecto y las capturas de verificación.
+Los commits incluyen el código fuente, las pruebas, la documentación y las capturas de verificación.
 
-## Instrucciones para subir a GitHub
-
-1. Crea un repositorio nuevo en GitHub llamado `taller1_prompts_engineering` (sin inicializarlo con README).
-2. Ejecuta en la terminal dentro de la carpeta del proyecto:
+## Cómo ejecutar la aplicación
 
 ```powershell
-git remote add origin https://github.com/TU_USUARIO/taller1_prompts_engineering.git
-git branch -M main
-git push -u origin main
-```
+# Instalar dependencia opcional
+pip install -r requirements.txt
 
-3. Inicia sesión en GitHub cuando se te solicite y actualiza el enlace de este informe.
+# Ejemplos de uso
+python todo.py add "Estudiar prompts" -p alta --due 2026-07-05
+python todo.py list
+python todo.py list --status vencidas --sort fecha
+python todo.py done 1
+python todo.py stats
+python todo.py export tareas.csv
+```
 
 ## Capturas de verificación
 
-Las capturas de las pruebas en terminal se incluyen en el archivo `capturas.md` del repositorio.
+Las pruebas manuales en terminal se documentan en `capturas.md`.
 
