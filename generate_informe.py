@@ -3,9 +3,16 @@
 import subprocess
 from pathlib import Path
 
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt, RGBColor
+
 PROJECT = Path(__file__).parent
 MD_OUTPUT = PROJECT / "informe_completo.md"
-DOCX_OUTPUT = PROJECT / "Informe_Taller1_PromptsEngineering.docx"
+DOCX_OUTPUT = PROJECT / "Informe_Taller1_PromptsEngineering_generando.docx"
+DOCX_FINAL = PROJECT / "Informe_Taller1_PromptsEngineering.docx"
 
 
 def read_file(path: Path) -> str:
@@ -36,16 +43,127 @@ def add_code(lines, text, lang=""):
     add(lines, "")
 
 
+def add_centered_paragraph(doc, text, font_size=12, bold=False, font_name="Calibri"):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(text)
+    run.font.size = Pt(font_size)
+    run.font.bold = bold
+    run.font.name = font_name
+    return p
+
+
+def insert_paragraph_at_beginning(doc, paragraph):
+    body = doc._element.body
+    body.remove(paragraph._element)
+    body.insert(0, paragraph._element)
+
+
+def insert_paragraph_after(target, paragraph):
+    body = target._element.getparent()
+    body.remove(paragraph._element)
+    for i, child in enumerate(body):
+        if child is target._element:
+            body.insert(i + 1, paragraph._element)
+            return
+    body.append(paragraph._element)
+
+
+def add_cover(doc):
+    """Inserta una carátula al inicio del documento."""
+    # Se agregan en orden inverso para que queden en el orden correcto al insertar al inicio.
+    # El último en insertarse (título) quedará primero; el primero en insertarse (fecha) quedará último.
+    p_date = add_centered_paragraph(doc, "Julio de 2026", 12)
+    insert_paragraph_at_beginning(doc, p_date)
+
+    insert_paragraph_at_beginning(doc, doc.add_paragraph())
+
+    p_author = add_centered_paragraph(doc, "Estudiante: Jhossua Vega", 12)
+    insert_paragraph_at_beginning(doc, p_author)
+
+    insert_paragraph_at_beginning(doc, doc.add_paragraph())
+
+    p_project = add_centered_paragraph(doc, "Aplicación profesional de Lista de Tareas en Python", 14)
+    insert_paragraph_at_beginning(doc, p_project)
+
+    insert_paragraph_at_beginning(doc, doc.add_paragraph())
+
+    p_subject = add_centered_paragraph(doc, "Taller 1: Prompts Engineering", 18)
+    insert_paragraph_at_beginning(doc, p_subject)
+
+    insert_paragraph_at_beginning(doc, doc.add_paragraph())
+
+    p_title = add_centered_paragraph(doc, "Informe de entrega", 28, bold=True)
+    insert_paragraph_at_beginning(doc, p_title)
+
+    # El salto de página va al final del último elemento de la carátula (fecha).
+    p_date.runs[0].add_break(WD_BREAK.PAGE)
+
+    return p_date
+
+
+def add_introduction(doc, last_cover_para):
+    """Inserta la introducción después de la carátula."""
+    # Se agregan en orden inverso para que queden en el orden correcto al insertar después del último párrafo de la carátula.
+    p_break = doc.add_paragraph()
+    p_break.add_run().add_break(WD_BREAK.PAGE)
+    insert_paragraph_after(last_cover_para, p_break)
+
+    p3 = doc.add_paragraph(
+        "El resultado final es un programa modular, con una clase TaskManager que gestiona la persistencia JSON, y una interfaz CLI basada en argparse. El proyecto incluye pruebas unitarias, validaciones, manejo de errores, exportación CSV y está alojado en GitHub para su revisión."
+    )
+    insert_paragraph_after(last_cover_para, p3)
+
+    p2 = doc.add_paragraph(
+        "El trabajo se organizó en cuatro prompts estructurados que cubren: arquitectura y pruebas, interfaz de línea de comandos, funcionalidades avanzadas y filtros, y finalmente UX, colores y documentación. Cada prompt incluye secciones de rol, contexto, tarea, restricciones, criterios de aceptación QA y consideraciones UX."
+    )
+    insert_paragraph_after(last_cover_para, p2)
+
+    p1 = doc.add_paragraph(
+        "Este informe presenta el desarrollo de una aplicación profesional de Lista de Tareas en Python, ejecutable desde la terminal. El objetivo fue aplicar técnicas de prompt engineering para generar un entregable robusto, ordenado y con enfoque de calidad (QA) y experiencia de usuario (UX)."
+    )
+    insert_paragraph_after(last_cover_para, p1)
+
+    p_heading = doc.add_heading("Introducción", level=1)
+    insert_paragraph_after(last_cover_para, p_heading)
+
+
+def style_terminal_blocks(doc):
+    """Aplica fondo negro y texto blanco a todos los bloques de código (estilo Source Code)."""
+    for paragraph in doc.paragraphs:
+        if paragraph.style.name != "Source Code":
+            continue
+        pPr = paragraph._element.get_or_add_pPr()
+        shd = OxmlElement("w:shd")
+        shd.set(qn("w:fill"), "000000")
+        pPr.append(shd)
+        paragraph.paragraph_format.space_before = Pt(0)
+        paragraph.paragraph_format.space_after = Pt(0)
+        paragraph.paragraph_format.line_spacing = 1.0
+        for run in paragraph.runs:
+            run.font.name = "Courier New"
+            run.font.size = Pt(8)
+            run.font.color.rgb = RGBColor(255, 255, 255)
+
+
+def format_docx(path):
+    """Post-procesa el .docx para agregar carátula, introducción y estilo de terminal."""
+    doc = Document(path)
+    last_cover_para = add_cover(doc)
+    add_introduction(doc, last_cover_para)
+    style_terminal_blocks(doc)
+    doc.save(path)
+
+
 def main():
     lines = []
 
-    add_heading(lines, "Informe de entrega - Taller 1: Prompts Engineering", level=1)
-
+    # La carátula y la introducción se agregan después con python-docx.
     add_heading(lines, "1. Datos generales", level=2)
     add_para(lines, "- **Asignatura:** Taller 1: Prompts Engineering")
     add_para(lines, "- **Tema:** Crear una aplicación de Lista de Tareas en Python desde la terminal utilizando prompt engineering.")
     add_para(lines, "- **Nombre del estudiante:** Jhossua Vega")
-    add_para(lines, "- **Fecha de entrega:** jueves, 2 de julio de 2026")
+    add_para(lines, "- **Fecha de entrega:** julio de 2026")
 
     add_heading(lines, "2. Proveedor y modelo de IA", level=2)
     add_para(lines, "- **Proveedor:** Cascade (asistente de código integrado en el IDE)")
@@ -71,7 +189,7 @@ def main():
     add_code(lines, read_file(PROJECT / "tests" / "test_todo.py"), lang="python")
 
     add_heading(lines, "6. Evidencia de ejecución", level=2)
-    add_para(lines, "A continuación se incluyen las capturas de las pruebas manuales realizadas en la terminal.")
+    add_para(lines, "A continuación se incluyen las capturas de las pruebas manuales realizadas en la terminal. Los bloques simulan el fondo negro y la tipografía de consola.")
     add(lines, read_file(PROJECT / "capturas.md"))
     add(lines, "")
 
@@ -105,14 +223,21 @@ def main():
             str(DOCX_OUTPUT),
             "--from=markdown",
             "--to=docx",
-            "--toc",
-            "--toc-depth=2",
         ],
         check=True,
     )
 
-    print(f"Documento generado: {DOCX_OUTPUT}")
-    print(f"Markdown intermedio: {MD_OUTPUT}")
+    print(f"Documento base generado: {DOCX_OUTPUT}")
+    format_docx(DOCX_OUTPUT)
+
+    try:
+        if DOCX_FINAL.exists():
+            DOCX_FINAL.unlink()
+        DOCX_OUTPUT.rename(DOCX_FINAL)
+        print(f"Documento final: {DOCX_FINAL}")
+    except OSError as exc:
+        print(f"No se pudo reemplazar el archivo anterior (puede estar abierto): {exc}")
+        print(f"Documento final: {DOCX_OUTPUT}")
 
 
 if __name__ == "__main__":
